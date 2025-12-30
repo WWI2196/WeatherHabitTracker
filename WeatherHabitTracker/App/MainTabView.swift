@@ -29,12 +29,12 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $viewModel.selectedTab) {
             // Weather Tab
-            Tab("Weather", systemImage: "cloud.sun.fill", value: .weather) {
+            Tab("Weather", systemImage: "cloud.sun.fill", value: MainTabViewModel.Tab.weather) {
                 WeatherView(viewModel: weatherViewModel)
             }
             
             // Habits Tab
-            Tab("Habits", systemImage: "checklist", value: .habits) {
+            Tab("Habits", systemImage: "checklist", value: MainTabViewModel.Tab.habits) {
                 HabitListView(viewModel: habitViewModel)
             }
         }

@@ -39,33 +39,61 @@ A modern iOS app combining **weather tracking** with **habit management**, built
 
 ## 🏗️ Architecture
 
-This project follows **MVVM (Model-View-ViewModel)** architecture with a dedicated Services layer:
+This project follows a **feature-based modular architecture** inspired by modern iOS practices (e.g., [isowords](https://github.com/pointfreeco/isowords)):
 
 ```
 WeatherHabitTracker/
-├── App/                    # App entry point and dependencies
+├── App/                      # App entry point & navigation
 │   ├── WeatherHabitTrackerApp.swift
 │   ├── AppDependencies.swift
-│   └── LaunchView.swift
-├── Models/                 # SwiftData models
-│   ├── Habit.swift
-│   ├── WeatherData.swift
-│   └── WeatherForecast.swift
-├── Services/               # Business logic services
-│   ├── WeatherService.swift
-│   ├── PersistenceService.swift
-│   ├── NotificationService.swift
-│   └── LocationService.swift
-├── ViewModels/             # ObservableObject view models
-│   ├── MainTabViewModel.swift
-│   ├── WeatherViewModel.swift
-│   └── HabitViewModel.swift
-├── Views/                  # SwiftUI views
-│   ├── Tabs/
-│   ├── Habit/
-│   └── Shared/
-├── Resources/              # Assets and localization
-└── Tests/                  # Unit and UI tests
+│   ├── LaunchView.swift
+│   └── MainTabView.swift
+│
+├── Features/                 # Feature modules (self-contained)
+│   ├── Weather/              # Weather feature
+│   │   ├── WeatherView.swift
+│   │   ├── WeatherViewModel.swift
+│   │   ├── WeatherData.swift
+│   │   ├── WeatherForecast.swift
+│   │   └── WeatherDTOs.swift
+│   │
+│   └── Habits/               # Habits feature
+│       ├── HabitListView.swift
+│       ├── HabitDetailView.swift
+│       ├── HabitFormView.swift
+│       ├── HabitRowView.swift
+│       ├── HabitViewModel.swift
+│       └── Habit.swift
+│
+├── Core/                     # Core infrastructure
+│   ├── Networking/
+│   │   └── WeatherService.swift
+│   ├── Persistence/
+│   │   └── PersistenceService.swift
+│   ├── Location/
+│   │   └── LocationService.swift
+│   └── Notifications/
+│       └── NotificationService.swift
+│
+├── Shared/                   # Shared utilities & components
+│   ├── Components/           # Reusable UI components
+│   │   ├── GlassCardView.swift
+│   │   ├── LoadingIndicatorView.swift
+│   │   └── ErrorView.swift
+│   ├── Styles/
+│   │   └── LiquidGlassStyle.swift
+│   ├── Extensions/
+│   │   ├── Date+Extensions.swift
+│   │   ├── View+Extensions.swift
+│   │   └── Color+Extensions.swift
+│   └── Constants.swift
+│
+├── Resources/                # Assets & configuration
+│   ├── Assets.xcassets/
+│   ├── Secrets.plist
+│   └── Localization/
+│
+└── Info.plist
 ```
 
 ### Key Patterns Used
