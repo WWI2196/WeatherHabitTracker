@@ -1,17 +1,11 @@
-//
-//  LiquidGlassStyle.swift
-//  WeatherHabitTracker
-//
-//  Native iOS 26 Liquid Glass support using system APIs.
-//  Uses Apple's glassEffect modifier and system materials.
-//
+// LiquidGlassStyle.swift
+// WeatherHabitTracker
 
 import SwiftUI
 
-// MARK: - Native Liquid Glass View Modifier
+// MARK: - Liquid Glass Modifier
 
-/// A view modifier that applies native iOS 26 Liquid Glass effects.
-/// Uses system `.glassEffect()` on iOS 26+ or falls back to materials on earlier versions.
+/// Applies native iOS 26 Liquid Glass effects with fallback
 struct NativeLiquidGlass: ViewModifier {
     var cornerRadius: CGFloat = 24
     
@@ -27,13 +21,12 @@ struct NativeLiquidGlass: ViewModifier {
 }
 
 extension View {
-    /// Applies native iOS 26 Liquid Glass effect to the view.
-    /// Uses system `.glassEffect()` API when available.
+    /// Applies Liquid Glass effect
     func liquidGlass(cornerRadius: CGFloat = 24) -> some View {
-        self.modifier(NativeLiquidGlass(cornerRadius: cornerRadius))
+        modifier(NativeLiquidGlass(cornerRadius: cornerRadius))
     }
     
-    /// Applies glass effect with prominent styling for important actions.
+    /// Prominent glass effect for buttons
     @ViewBuilder
     func liquidGlassProminent(cornerRadius: CGFloat = 24) -> some View {
         if #available(iOS 26.0, macOS 26.0, *) {
@@ -42,37 +35,47 @@ extension View {
             self.background(.thinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         }
     }
+    
+    /// Subtle glass effect
+    @ViewBuilder
+    func subtleGlass() -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            self.glassEffect(.regular, in: .rect(cornerRadius: 12))
+        } else {
+            self.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+    }
+    
+    /// Concentric clip shape for nested elements
+    @ViewBuilder
+    func concentricClipShape(cornerRadius: CGFloat = 20) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            self.clipShape(ConcentricRectangle())
+        } else {
+            self.clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        }
+    }
 }
 
-// MARK: - Liquid Glass Background
+// MARK: - Glass Background
 
-/// A background view optimized for Liquid Glass content.
-/// Provides a subtle gradient that works well with translucent materials.
 struct LiquidGlassBackground: View {
     var style: BackgroundStyle = .default
     
-    enum BackgroundStyle {
-        case `default`
-        case weather
-        case habits
-    }
+    enum BackgroundStyle { case `default`, weather, habits }
     
     var body: some View {
         switch style {
-        case .default:
-            defaultBackground
-        case .weather:
-            weatherBackground
-        case .habits:
-            habitsBackground
+        case .default: defaultBackground
+        case .weather: weatherBackground
+        case .habits: habitsBackground
         }
     }
     
     private var defaultBackground: some View {
         #if os(iOS)
         MeshGradient(
-            width: 3,
-            height: 3,
+            width: 3, height: 3,
             points: [
                 [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
                 [0.0, 0.5], [0.5, 0.5], [1.0, 0.5],
@@ -87,12 +90,8 @@ struct LiquidGlassBackground: View {
         .ignoresSafeArea()
         #else
         LinearGradient(
-            colors: [
-                Color(nsColor: .windowBackgroundColor),
-                Color(nsColor: .controlBackgroundColor)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
+            colors: [Color(nsColor: .windowBackgroundColor), Color(nsColor: .controlBackgroundColor)],
+            startPoint: .top, endPoint: .bottom
         )
         .ignoresSafeArea()
         #endif
@@ -100,8 +99,7 @@ struct LiquidGlassBackground: View {
     
     private var weatherBackground: some View {
         MeshGradient(
-            width: 3,
-            height: 3,
+            width: 3, height: 3,
             points: [
                 [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
                 [0.0, 0.5], [0.6, 0.4], [1.0, 0.5],
@@ -118,8 +116,7 @@ struct LiquidGlassBackground: View {
     
     private var habitsBackground: some View {
         MeshGradient(
-            width: 3,
-            height: 3,
+            width: 3, height: 3,
             points: [
                 [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
                 [0.0, 0.5], [0.5, 0.5], [1.0, 0.5],
@@ -132,20 +129,5 @@ struct LiquidGlassBackground: View {
             ]
         )
         .ignoresSafeArea()
-    }
-}
-
-// MARK: - Concentric Shape Support
-
-extension View {
-    /// Creates a concentric rounded rectangle shape that aligns with container curvature.
-    /// Uses iOS 26's ConcentricRectangle when available.
-    @ViewBuilder
-    func concentricClipShape(cornerRadius: CGFloat = 20) -> some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
-            self.clipShape(ConcentricRectangle())
-        } else {
-            self.clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        }
     }
 }

@@ -1,58 +1,45 @@
-//
-//  HabitListView.swift
-//  WeatherHabitTracker
-//
-//  The main habit list view displaying all habits with filtering and management options.
-//  Uses Apple's Liquid Glass design and SwiftUI Lists.
-//
+// HabitListView.swift
+// WeatherHabitTracker
 
 import SwiftUI
 import SwiftData
 
-/// The habits tab view displaying the list of habits with management capabilities.
-/// Features search, filtering, and quick completion actions.
+/// Main habit list with management and statistics
 struct HabitListView: View {
-    
-    // MARK: - Properties
-    
     @Bindable var viewModel: HabitViewModel
-    
-    // MARK: - Body
+    @State private var showStatsTooltip = false
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background
                 backgroundGradient
                 
-                // Content
                 if viewModel.habits.isEmpty && !viewModel.isLoading {
                     emptyStateView
+                        .transition(.opacity)
+                } else if viewModel.isLoading {
+                    HabitSkeletonLoadingView()
+                        .transition(.opacity)
                 } else {
                     habitListContent
+                        .transition(.opacity)
                 }
             }
+            .animation(.spring(response: 0.4), value: viewModel.habits.isEmpty)
             .navigationTitle("Habits")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             #endif
             .searchable(text: $viewModel.searchText, prompt: "Search habits")
-            .toolbar {
-                toolbarContent
-            }
+            .toolbar { toolbarContent }
             .sheet(isPresented: $viewModel.showHabitForm) {
-                HabitFormView(
-                    viewModel: viewModel,
-                    habit: viewModel.editingHabit
-                )
+                HabitFormView(viewModel: viewModel, habit: viewModel.editingHabit)
             }
-            .onAppear {
-                viewModel.loadHabits()
-            }
+            .onAppear { viewModel.loadHabits() }
             .alert("Error", isPresented: $viewModel.showError) {
-                Button("OK") {
-                    viewModel.dismissError()
-                }
+                Button("OK") { viewModel.dismissError() }
             } message: {
                 Text(viewModel.errorMessage ?? "An error occurred")
             }
@@ -61,7 +48,6 @@ struct HabitListView: View {
     
     // MARK: - Background
     
-    /// Gradient background for the habit list using MeshGradient
     private var backgroundGradient: some View {
         MeshGradient(
             width: 3,
@@ -80,28 +66,21 @@ struct HabitListView: View {
         .ignoresSafeArea()
     }
     
-    // MARK: - Habit List Content
+    // MARK: - Content
     
-    /// Main list content with statistics and habits
     private var habitListContent: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
-                // Statistics Card
                 statisticsCard
-                
-                // Filter Picker
                 filterPicker
-                
-                // Habit List
                 habitsList
             }
             .padding()
         }
     }
     
-    // MARK: - Statistics Card
+    // MARK: - Statistics
     
-    /// Overview statistics card with Liquid Glass effect
     private var statisticsCard: some View {
         GlassCardView {
             VStack(spacing: 16) {
@@ -114,11 +93,7 @@ struct HabitListView: View {
                     Circle()
                         .trim(from: 0, to: viewModel.todayCompletionPercentage)
                         .stroke(
-                            LinearGradient(
-                                colors: [.green, .teal],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
+                            LinearGradient(colors: [.green, .teal], startPoint: .topLeading, endPoint: .bottomTrailing),
                             style: StrokeStyle(lineWidth: 12, lineCap: .round)
                         )
                         .frame(width: 100, height: 100)
@@ -135,37 +110,44 @@ struct HabitListView: View {
                     }
                 }
                 
-                // Statistics Grid
                 HStack(spacing: 30) {
-                    statisticItem(
-                        icon: "flame.fill",
-                        value: "\(viewModel.bestStreak)",
-                        label: "Best Streak",
-                        color: .orange
-                    )
+                    statisticItem(icon: "flame.fill", value: "\(viewModel.bestStreak)", label: "Best Streak", color: .orange)
                     
-                    Divider()
-                        .frame(height: 40)
+                    Divider().frame(height: 40)
                     
-                    statisticItem(
-                        icon: "checkmark.circle.fill",
-                        value: "\(viewModel.totalCompletions)",
-                        label: "Total Done",
-                        color: .green
-                    )
+                    statisticItem(icon: "checkmark.circle.fill", value: "\(viewModel.totalCompletions)", label: "Total Done", color: .green)
                 }
             }
             .padding(.vertical, 12)
         }
+        .overlay(alignment: .topTrailing) {
+            Button {
+                withAnimation(.spring(response: 0.3)) {
+                    showStatsTooltip.toggle()
+                }
+                hapticFeedback(.light)
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+        }
+        .overlay {
+            if showStatsTooltip {
+                FeatureTooltip(
+                    title: "Habit Statistics",
+                    description: "Track your progress with streaks and completion counts. Build consistency to increase your streak!",
+                    icon: "chart.bar.fill",
+                    isVisible: $showStatsTooltip
+                )
+                .transition(.scale.combined(with: .opacity))
+                .offset(y: -120)
+            }
+        }
     }
     
-    /// Individual statistic item
-    private func statisticItem(
-        icon: String,
-        value: String,
-        label: String,
-        color: Color
-    ) -> some View {
+    private func statisticItem(icon: String, value: String, label: String, color: Color) -> some View {
         VStack(spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
@@ -181,9 +163,8 @@ struct HabitListView: View {
         }
     }
     
-    // MARK: - Filter Picker
+    // MARK: - Filter
     
-    /// Filter segmented control
     private var filterPicker: some View {
         Picker("Filter", selection: $viewModel.filterOption) {
             ForEach(HabitViewModel.FilterOption.allCases) { option in
@@ -191,11 +172,13 @@ struct HabitListView: View {
             }
         }
         .pickerStyle(.segmented)
+        .onChange(of: viewModel.filterOption) { _, _ in
+            hapticFeedback(.selection)
+        }
     }
     
     // MARK: - Habits List
     
-    /// List of habit rows
     private var habitsList: some View {
         LazyVStack(spacing: 12) {
             ForEach(viewModel.filteredHabits) { habit in
@@ -206,22 +189,21 @@ struct HabitListView: View {
                             withAnimation(.spring(response: 0.3)) {
                                 viewModel.toggleCompletion(for: habit)
                             }
+                            hapticFeedback(.success)
                         }
                     )
                 }
                 .buttonStyle(.plain)
-                .contextMenu {
-                    habitContextMenu(for: habit)
-                }
+                .contextMenu { habitContextMenu(for: habit) }
             }
         }
     }
     
-    /// Context menu actions for a habit
     private func habitContextMenu(for habit: Habit) -> some View {
         Group {
             Button {
                 viewModel.toggleCompletion(for: habit)
+                hapticFeedback(.success)
             } label: {
                 Label(
                     habit.isCompletedToday ? "Mark Incomplete" : "Mark Complete",
@@ -229,9 +211,7 @@ struct HabitListView: View {
                 )
             }
             
-            Button {
-                viewModel.editHabit(habit)
-            } label: {
+            Button { viewModel.editHabit(habit) } label: {
                 Label("Edit", systemImage: "pencil")
             }
             
@@ -239,6 +219,7 @@ struct HabitListView: View {
             
             Button(role: .destructive) {
                 viewModel.deleteHabit(habit)
+                hapticFeedback(.warning)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
@@ -247,7 +228,6 @@ struct HabitListView: View {
     
     // MARK: - Empty State
     
-    /// Empty state view when no habits exist
     private var emptyStateView: some View {
         VStack(spacing: 24) {
             Image(systemName: "checklist")
@@ -267,24 +247,24 @@ struct HabitListView: View {
             
             Button {
                 viewModel.addNewHabit()
+                hapticFeedback(.medium)
             } label: {
                 Label("Add Your First Habit", systemImage: "plus.circle.fill")
                     .font(.headline)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
+            .buttonStyle(.nativeGlassProminent)
         }
         .padding()
     }
     
     // MARK: - Toolbar
     
-    /// Toolbar content
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Button {
                 viewModel.addNewHabit()
+                hapticFeedback(.medium)
             } label: {
                 Image(systemName: "plus.circle.fill")
                     .font(.title3)
@@ -293,8 +273,6 @@ struct HabitListView: View {
         }
     }
 }
-
-// MARK: - Preview
 
 #Preview {
     HabitListView(viewModel: HabitViewModel())

@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 extension View {
     
@@ -78,7 +81,11 @@ extension View {
     func previewContainer() -> some View {
         self
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
+            #if canImport(UIKit)
+            .background(Color(UIColor.systemBackground))
+            #else
+            .background(Color.primary.colorInvert()) // Fallback for non-UIKit platforms
+            #endif
     }
 }
 #endif

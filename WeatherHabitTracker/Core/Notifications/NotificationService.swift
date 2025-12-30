@@ -1,49 +1,31 @@
-//
-//  NotificationService.swift
-//  WeatherHabitTracker
-//
-//  Service responsible for managing local notifications for habit reminders.
-//  Uses UserNotifications framework for scheduling and managing notifications.
-//
+// NotificationService.swift
+// WeatherHabitTracker
 
 import Foundation
 import UserNotifications
 
-/// Service that manages local notifications for habit reminders.
-/// Handles permission requests, scheduling, and cancellation of notifications.
 @MainActor
 @Observable
 final class NotificationService {
     
     // MARK: - Properties
     
-    /// The notification center instance
     private var notificationCenter: UNUserNotificationCenter? {
-        // Avoid crashing in raw executable mode (swift run) where bundle ID is nil
         guard Bundle.main.bundleIdentifier != nil else { return nil }
         return UNUserNotificationCenter.current()
     }
     
-    /// Current authorization status
     var authorizationStatus: UNAuthorizationStatus = .notDetermined
-    
-    /// Whether notifications are authorized
-    var isAuthorized: Bool {
-        authorizationStatus == .authorized
-    }
+    var isAuthorized: Bool { authorizationStatus == .authorized }
     
     // MARK: - Initialization
     
-    /// Initializes the notification service and checks current authorization status
     init() {
-        Task {
-            await checkAuthorizationStatus()
-        }
+        Task { await checkAuthorizationStatus() }
     }
     
     // MARK: - Authorization
     
-    /// Checks the current notification authorization status
     func checkAuthorizationStatus() async {
         guard let center = notificationCenter else { return }
         let settings = await center.notificationSettings()
