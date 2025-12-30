@@ -138,7 +138,7 @@ jobs:
         run: |
           mkdir -p artifacts
           if [ -d "build/WeatherHabitTracker.xcarchive" ]; then
-            cd build && zip -r ../artifacts/WeatherHabitTracker-${{ github.sha }}.zip WeatherHabitTracker.xcarchive
+            (cd build && zip -r ../artifacts/WeatherHabitTracker-${{ github.sha }}.zip WeatherHabitTracker.xcarchive)
           fi
           zip -r artifacts/source-${{ github.sha }}.zip . -x "*.git*" -x "build/*" -x "*.xcarchive*"
       
