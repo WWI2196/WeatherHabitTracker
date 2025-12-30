@@ -22,6 +22,10 @@ struct MainTabView: View {
             Tab("Habits", systemImage: "checklist", value: MainTabViewModel.Tab.habits) {
                 HabitListView(viewModel: habitViewModel)
             }
+            
+            Tab("Settings", systemImage: "gear", value: MainTabViewModel.Tab.settings) {
+                SettingsView()
+            }
         }
         .tabViewStyle(.sidebarAdaptable)
         .onAppear { setupViewModels() }
@@ -35,7 +39,8 @@ struct MainTabView: View {
         
         weatherViewModel.configure(
             weatherService: dependencies.weatherService,
-            persistenceService: persistenceService
+            persistenceService: persistenceService,
+            locationService: dependencies.locationService
         )
         
         habitViewModel.configure(

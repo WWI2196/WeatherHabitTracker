@@ -7,6 +7,7 @@ import SwiftUI
 struct WeatherView: View {
     @Bindable var viewModel: WeatherViewModel
     @State private var showInsightTooltip = false
+    @State private var showLocationSearch = false
     
     var body: some View {
         NavigationStack {
@@ -36,12 +37,26 @@ struct WeatherView: View {
             .navigationTitle("Weather")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             #endif
             .refreshable {
                 hapticFeedback(.medium)
                 await viewModel.refresh()
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showLocationSearch = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.primary)
+                            .padding(8)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                }
+            }
+            .sheet(isPresented: $showLocationSearch) {
+                LocationSearchView(viewModel: viewModel)
             }
             .task {
                 if viewModel.needsRefresh {

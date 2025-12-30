@@ -3,6 +3,7 @@
 
 import Foundation
 import CoreLocation
+import MapKit
 
 @Observable
 final class LocationService: NSObject, @unchecked Sendable {
@@ -14,10 +15,12 @@ final class LocationService: NSObject, @unchecked Sendable {
     var errorMessage: String?
     var isLoading: Bool = false
     var locationName: String?
+    var completions: [LocationCompletion] = []
     
     // MARK: - Private Properties
     
     private let locationManager: CLLocationManager
+    private let searchCompleter = MKLocalSearchCompleter()
     private var locationContinuation: CheckedContinuation<CLLocation, Error>?
     
     // MARK: - Computed Properties
@@ -41,9 +44,34 @@ final class LocationService: NSObject, @unchecked Sendable {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
         locationManager.distanceFilter = 1000
+        
+        searchCompleter.delegate = self
+        searchCompleter.resultTypes = .address
     }
     
     // MARK: - Public Methods
+    
+    func updateSearchQuery(_ query: String) {
+        searchCompleter.queryFragment = query
+    }
+    
+    func resolveLocation(from completion: LocationCompletion) async throws -> LocationSearchResult {
+        let searchRequest = MKLocalSearch.Request()
+        searchRequest.naturalLanguageQuery = "\(completion.title) \(completion.subtitle)"
+        let search = MKLocalSearch(request: searchRequest)
+        let response = try await search.start()
+        
+        guard let item = response.mapItems.first,
+              let location = item.placemark.location else {
+            throw LocationError.locationUnavailable("Location not found")
+        }
+        
+        return LocationSearchResult(
+            id: UUID(),
+            name: completion.title,
+            location: location
+        )
+    }
     
     func requestAuthorization() {
         locationManager.requestWhenInUseAuthorization()
@@ -107,6 +135,59 @@ final class LocationService: NSObject, @unchecked Sendable {
         }
         
         return "Unknown Location"
+    }
+    
+    func searchLocation(query: String) async throws -> [LocationSearchResult] {
+        let geocoder = CLGeocoder()
+        let placemarks = try await geocoder.geocodeAddressString(query)
+        
+        return placemarks.compactMap { placemark in
+            guard let location = placemark.location,
+                  let name = placemark.name ?? placemark.locality else { return nil }
+            
+            var title = name
+            if let locality = placemark.locality, locality != name {
+                title += ", \(locality)"
+            }
+            if let administrativeArea = placemark.administrativeArea {
+                title += ", \(administrativeArea)"
+            }
+            if let country = placemark.country {
+                title += ", \(country)"
+            }
+            
+            return LocationSearchResult(
+                id: UUID(),
+                name: title,
+                location: location
+            )
+        }
+    }
+}
+
+struct LocationSearchResult: Identifiable, Sendable {
+    let id: UUID
+    let name: String
+    let location: CLLocation
+}
+
+struct LocationCompletion: Identifiable, Hashable, Sendable {
+    let id = UUID()
+    let title: String
+    let subtitle: String
+}
+
+// MARK: - MKLocalSearchCompleterDelegate
+
+extension LocationService: MKLocalSearchCompleterDelegate {
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        completions = completer.results.map { result in
+            LocationCompletion(title: result.title, subtitle: result.subtitle)
+        }
+    }
+    
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        print("Search completer error: \(error.localizedDescription)")
     }
 }
 

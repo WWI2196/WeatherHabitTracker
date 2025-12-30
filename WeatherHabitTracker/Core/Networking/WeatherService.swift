@@ -6,7 +6,9 @@ import CoreLocation
 
 protocol WeatherServiceProtocol: Sendable {
     func fetchCurrentWeather() async throws -> WeatherResponseDTO
+    func fetchCurrentWeather(latitude: Double, longitude: Double) async throws -> WeatherResponseDTO
     func fetchForecast() async throws -> ForecastResponseDTO
+    func fetchForecast(latitude: Double, longitude: Double) async throws -> ForecastResponseDTO
 }
 
 actor WeatherService: WeatherServiceProtocol {

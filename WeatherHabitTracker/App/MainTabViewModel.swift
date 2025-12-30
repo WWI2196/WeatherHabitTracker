@@ -18,6 +18,7 @@ final class MainTabViewModel {
     enum Tab: String, CaseIterable, Identifiable {
         case weather
         case habits
+        case settings
         
         var id: String { rawValue }
         
@@ -25,6 +26,7 @@ final class MainTabViewModel {
             switch self {
             case .weather: return "Weather"
             case .habits: return "Habits"
+            case .settings: return "Settings"
             }
         }
         
@@ -32,6 +34,7 @@ final class MainTabViewModel {
             switch self {
             case .weather: return "cloud.sun.fill"
             case .habits: return "checklist"
+            case .settings: return "gear"
             }
         }
     }

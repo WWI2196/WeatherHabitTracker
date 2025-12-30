@@ -29,8 +29,7 @@ struct HabitListView: View {
             .navigationTitle("Habits")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             #endif
             .searchable(text: $viewModel.searchText, prompt: "Search habits")
             .toolbar { toolbarContent }

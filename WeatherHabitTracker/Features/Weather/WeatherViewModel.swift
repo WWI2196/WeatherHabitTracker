@@ -4,6 +4,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import CoreLocation
 
 /// Manages weather data fetching and state
 @MainActor
@@ -20,19 +21,75 @@ final class WeatherViewModel {
     var showError: Bool = false
     var lastRefresh: Date?
     
+    // Location Search
+    var searchQuery: String = ""
+    var searchResults: [LocationSearchResult] = []
+    var isSearching: Bool = false
+    var selectedLocation: CLLocation?
+    
     // MARK: - Dependencies
     
     private var weatherService: (any WeatherServiceProtocol)?
     private var persistenceService: PersistenceService?
+    var locationService: LocationService?
     
-    init(weatherService: (any WeatherServiceProtocol)? = nil, persistenceService: PersistenceService? = nil) {
+    init(weatherService: (any WeatherServiceProtocol)? = nil, persistenceService: PersistenceService? = nil, locationService: LocationService? = nil) {
         self.weatherService = weatherService
         self.persistenceService = persistenceService
+        self.locationService = locationService
     }
     
-    func configure(weatherService: any WeatherServiceProtocol, persistenceService: PersistenceService) {
+    func configure(weatherService: any WeatherServiceProtocol, persistenceService: PersistenceService, locationService: LocationService) {
         self.weatherService = weatherService
         self.persistenceService = persistenceService
+        self.locationService = locationService
+    }
+    
+    // MARK: - Location Search
+    
+    func updateSearchQuery(_ query: String) {
+        locationService?.updateSearchQuery(query)
+    }
+    
+    func selectCompletion(_ completion: LocationCompletion) async {
+        guard let locationService = locationService else { return }
+        do {
+            let result = try await locationService.resolveLocation(from: completion)
+            selectLocation(result)
+        } catch {
+            print("Location resolution error: \(error.localizedDescription)")
+        }
+    }
+    
+    func searchLocation() async {
+        guard !searchQuery.isEmpty, let locationService = locationService else { return }
+        
+        isSearching = true
+        do {
+            searchResults = try await locationService.searchLocation(query: searchQuery)
+        } catch {
+            print("Search error: \(error.localizedDescription)")
+            searchResults = []
+        }
+        isSearching = false
+    }
+    
+    func selectLocation(_ result: LocationSearchResult) {
+        selectedLocation = result.location
+        searchQuery = ""
+        searchResults = []
+        Task {
+            await fetchWeather()
+            await fetchForecast()
+        }
+    }
+    
+    func useCurrentLocation() {
+        selectedLocation = nil
+        Task {
+            await fetchWeather()
+            await fetchForecast()
+        }
     }
     
     // MARK: - Data Loading
@@ -49,7 +106,16 @@ final class WeatherViewModel {
         errorMessage = nil
         
         do {
-            let weatherDTO = try await weatherService.fetchCurrentWeather()
+            let weatherDTO: WeatherResponseDTO
+            
+            if let selectedLocation = selectedLocation {
+                weatherDTO = try await weatherService.fetchCurrentWeather(
+                    latitude: selectedLocation.coordinate.latitude,
+                    longitude: selectedLocation.coordinate.longitude
+                )
+            } else {
+                weatherDTO = try await weatherService.fetchCurrentWeather()
+            }
             
             let weather = WeatherData(
                 locationName: weatherDTO.name,
@@ -92,7 +158,17 @@ final class WeatherViewModel {
         isForecastLoading = true
         
         do {
-            let forecastDTO = try await weatherService.fetchForecast()
+            let forecastDTO: ForecastResponseDTO
+            
+            if let selectedLocation = selectedLocation {
+                forecastDTO = try await weatherService.fetchForecast(
+                    latitude: selectedLocation.coordinate.latitude,
+                    longitude: selectedLocation.coordinate.longitude
+                )
+            } else {
+                forecastDTO = try await weatherService.fetchForecast()
+            }
+            
             let calendar = Calendar.current
             var dailyForecasts: [Date: ForecastItemDTO] = [:]
             

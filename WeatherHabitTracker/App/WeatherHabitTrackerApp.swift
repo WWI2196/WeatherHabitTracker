@@ -24,6 +24,9 @@ struct WeatherHabitTrackerApp: App {
     /// SwiftData model container for persistent storage
     let modelContainer: ModelContainer
     
+    /// App Theme Storage
+    @AppStorage("appTheme") private var appTheme: AppTheme = .system
+    
     // MARK: - Initialization
     
     /// Initializes the app and configures the SwiftData model container.
@@ -61,9 +64,20 @@ struct WeatherHabitTrackerApp: App {
             LaunchView()
                 .environment(dependencies)
                 .modelContainer(modelContainer)
+                .preferredColorScheme(appTheme.colorScheme)
         }
         #if os(macOS)
         .windowStyle(.automatic)
         #endif
+    }
+}
+
+extension AppTheme {
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
     }
 }
